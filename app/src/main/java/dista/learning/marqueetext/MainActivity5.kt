@@ -17,6 +17,7 @@ class MainActivity5 : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main5)
+        //TODO getting delay at the first and while starting the animation need to rector this
 //TODO Refactor this code and then change it by you login you can minimize it more and more
          marqueeLayout = findViewById(R.id.marqueeLayout)
         val sections = listOf(
