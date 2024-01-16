@@ -3,22 +3,28 @@ package dista.learning.marqueetext
 import android.net.IpSecManager.ResourceUnavailableException
 import android.os.Bundle
 import android.os.Handler
+import android.widget.HorizontalScrollView
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity2 : AppCompatActivity() {
-    private lateinit var scrollView: MarqueeLayout
+    private lateinit var scrollView: HorizontalScrollView
+    private lateinit var linearScrollView: LinearLayout
     private lateinit var handler: Handler
     private lateinit var runnable: Runnable
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main2)
+        supportActionBar?.title = "Activity 2"
         scrollView = findViewById(R.id.horizontalMarquee)
+        linearScrollView = findViewById(R.id.linearMarquee)
+
         val sections = listOf(
-            "Hello1",
-            "Hello1",
-            "Hello1",
+            "    ",
+            "     ",
+            "      ",
             "Hello1",
             "Hello1",
             "Hello1",
@@ -28,14 +34,14 @@ class MainActivity2 : AppCompatActivity() {
         )
         for(section in sections){
             val textView1 = addTextView(section)
-            scrollView.addTextViewSection(textView1)
+            linearScrollView.addView(textView1)
         }
         // add the textView to it
 
         handler = Handler()
        runnable = object :Runnable{
            override fun run() {
-               scrollView.smoothScrollBy(2, 0) // here i can adjust the speed of horizontal scroll
+               scrollView.smoothScrollBy(4, 0) // here i can adjust the speed of horizontal scroll
                        if(!scrollView.canScrollHorizontally(1)) {
                            scrollView.scrollTo(0,0)
                        }
@@ -68,3 +74,4 @@ class MainActivity2 : AppCompatActivity() {
         handler.removeCallbacks(runnable)
     }
 }
+

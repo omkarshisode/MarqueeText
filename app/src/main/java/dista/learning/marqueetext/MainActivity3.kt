@@ -37,6 +37,7 @@ class MainActivity3 : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main3)
+        supportActionBar?.title = "Activity 3"
       recycler  = findViewById(R.id.rvRecyclerview)
         val layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
         recycler.layoutManager = layoutManager
