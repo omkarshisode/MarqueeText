@@ -8,7 +8,6 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
 import android.text.TextUtils
-import android.text.style.TypefaceSpan
 import android.util.AttributeSet
 import android.view.ViewGroup
 import android.widget.TextView
@@ -18,7 +17,7 @@ class MainActivity5 : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main5)
-
+//TODO Refactor this code and then change it by you login you can minimize it more and more
          marqueeLayout = findViewById(R.id.marqueeLayout)
         val sections = listOf(
             MarqueeSection("Activity 1 ", MainActivity::class.java),
