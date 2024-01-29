@@ -1,5 +1,7 @@
 package dista.learning.marqueetext
 
+import android.animation.ObjectAnimator
+import android.animation.ValueAnimator
 import android.content.Context
 import android.content.Intent
 import android.graphics.Paint
@@ -9,8 +11,16 @@ import android.os.Bundle
 import android.os.Handler
 import android.text.TextUtils
 import android.util.AttributeSet
+import android.view.View
+import android.view.View.resolveSize
 import android.view.ViewGroup
+import android.view.ViewTreeObserver
+import android.view.animation.AccelerateDecelerateInterpolator
+import android.view.animation.LinearInterpolator
+import android.widget.FrameLayout
+import android.widget.LinearLayout
 import android.widget.TextView
+import kotlinx.coroutines.NonCancellable.start
 
 class MainActivity5 : AppCompatActivity() {
     private lateinit var marqueeLayout:MarqueeLayout
@@ -38,73 +48,28 @@ class MainActivity5 : AppCompatActivity() {
         for(section in sections){
             marqueeLayout.addMarqueeTextView(section)
         }
-
-// Add more TextViews as needed
         marqueeLayout.startMarqueeAnimation()
     }
-
-//    override fun onPause() {
-//        super.onPause()
-//        marqueeLayout.stopMarqueeAnimation()
-//    }
 }
 
 class MarqueeLayout(context: Context, attrs: AttributeSet? = null) : ViewGroup(context, attrs) {
 
     private val marqueeTextViews: MutableList<TextView> = mutableListOf()
-    private var currentScroll: Float = 0f
 
-    private val handler: Handler = Handler()
-    private val marqueeRunnable: Runnable = object : Runnable {
-        override fun run() {
-            // Update the current scroll position
-            currentScroll -= MARQUEE_SCROLL_SPEED
-
-            // If the text has scrolled completely, reset the scroll position
-            if (currentScroll <= -getMaxTextWidth()) {
-                currentScroll = width.toFloat()
-            }
-
-            // Force a redraw to update the scroll position for each TextView
-            marqueeTextViews.forEach { it.translationX = currentScroll }
-
-            // Schedule the next iteration
-            handler.postDelayed(this, MARQUEE_UPDATE_DELAY)
-        }
-    }
 
     init {
-        // Extract attributes if available
-        attrs?.let {
-            val typedArray = context.obtainStyledAttributes(it, R.styleable.MarqueeLayout)
-            // You can add custom attributes handling here if needed
-            typedArray.recycle()
-        }
-        currentScroll = -getMaxTextWidth()
+        // Add a layout change listener to listen for changes in the layout
+        viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
+            override fun onGlobalLayout() {
+                // Remove the layout change listener after it's triggered
+                viewTreeObserver.removeOnGlobalLayoutListener(this)
+
+                // Start the marquee animation after layout changes have been applied
+                startMarqueeAnimation()
+            }
+        })
     }
 
-    override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
-        // Layout each child TextView
-        var left = width - getMaxTextWidth().toInt()
-        for (child in marqueeTextViews) {
-            child.layout(left, 0, left + child.measuredWidth, child.measuredHeight)
-            left += child.measuredWidth-400 // to reduce the space between the alternative text view
-        }
-    }
-
-    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        // Measure each child TextView
-        marqueeTextViews.forEach { it.measure(widthMeasureSpec, heightMeasureSpec) }
-
-        // Set the total width and height based on the sum of child TextView widths and heights
-        val totalWidth = marqueeTextViews.sumBy { it.measuredWidth }
-        val totalHeight = marqueeTextViews.maxOfOrNull { it.measuredHeight } ?: 0
-
-        setMeasuredDimension(
-            resolveSize(totalWidth, widthMeasureSpec),
-            resolveSize(totalHeight, heightMeasureSpec)
-        )
-    }
 
     fun addMarqueeTextView(marqueeSection: MarqueeSection) {
         val textView = createMarqueeTextView(marqueeSection)
@@ -130,21 +95,63 @@ class MarqueeLayout(context: Context, attrs: AttributeSet? = null) : ViewGroup(c
         return textView
     }
 
+
+
+    override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
+        // Layout each child TextView
+        var left = 0
+        for (i in 0 until childCount) {
+            val child = getChildAt(i)
+            child.layout(left, 0, left + child.measuredWidth, child.measuredHeight)
+            left += child.measuredWidth
+        }
+    }
+
+    private var totalWidth = 0
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        // Measure each child TextView
+        for (i in 0 until childCount) {
+            val child = getChildAt(i)
+            measureChild(child, widthMeasureSpec, heightMeasureSpec)
+        }
+
+        // Set the total width and height based on the sum of child TextView widths and heights
+         totalWidth = (0 until childCount).sumOf { getChildAt(it).measuredWidth }
+        val totalHeight = (0 until childCount).maxOfOrNull { getChildAt(it).measuredHeight } ?: 0
+
+        setMeasuredDimension(
+            resolveSize(totalWidth, widthMeasureSpec),
+            resolveSize(totalHeight, heightMeasureSpec)
+        )
+    }
+
+    private fun calculateEndingValue(): Float {
+        val totalTextViewWidth = calculateTotalTextViewWidth()
+        val layoutWidth = width
+        return -((totalTextViewWidth - layoutWidth).coerceAtLeast(0)).toFloat()
+    }
+
+    private fun calculateTotalTextViewWidth(): Int {
+        var totalWidth = 0
+        for (textView in marqueeTextViews) {
+            totalWidth += textView.width
+        }
+        return totalWidth
+    }
     fun startMarqueeAnimation() {
-        handler.removeCallbacks(marqueeRunnable)
-        handler.postDelayed(marqueeRunnable, MARQUEE_UPDATE_DELAY)
-    }
+        for (i in marqueeTextViews.indices) {
+            val textView = marqueeTextViews[i]
+            // Set initial translationX value to the width of the MarqueeLayout
+            textView.translationX = width.toFloat() * (i + 1)
+            val screenWidth = resources.displayMetrics.widthPixels.toFloat()
 
-    fun stopMarqueeAnimation() {
-        handler.removeCallbacks(marqueeRunnable)
-    }
+            val animator = ObjectAnimator.ofFloat(textView, "translationX", screenWidth, -totalWidth.toFloat())
+            animator.duration = 21000 // Increase the duration for a slower, smoother animation
+            animator.interpolator = LinearInterpolator()
+            animator.repeatCount = ObjectAnimator.INFINITE
+            animator.repeatMode = ObjectAnimator.RESTART
 
-    private fun getMaxTextWidth(): Float {
-        return marqueeTextViews.sumBy { it.width }.toFloat()
-    }
-
-    companion object {
-        private const val MARQUEE_SCROLL_SPEED = 3.0f
-        private const val MARQUEE_UPDATE_DELAY = 16L  // Update every 16 milliseconds (roughly 60 FPS)
+            animator.start()
+        }
     }
 }
